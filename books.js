@@ -1,3 +1,12 @@
-const books = [];
+const lowdb = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
 
-module.exports = books;
+const adapter = new FileSync('db.json');
+const db = lowdb(adapter);
+
+// Inisialisasi data jika kosong
+if (!db.has('books').value()) {
+  db.set('books', []).write();
+}
+
+module.exports = db.get('books');

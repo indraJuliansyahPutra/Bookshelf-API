@@ -1,23 +1,39 @@
 const { nanoid } = require('nanoid');
-const books = require('./books');
+const db = require('./books');
 
 const addBookHandler = (request, h) => {
   const {
-    name, year, author, summary, publisher, pageCount, readPage, reading,
+    name,
+    year,
+    author,
+    summary,
+    publisher,
+    pageCount,
+    readPage,
+    reading,
   } = request.payload;
 
   const id = nanoid(16);
   const insertedAt = new Date().toISOString();
   const updatedAt = insertedAt;
-  const finished = pageCount === readPage;
 
   const newBook = {
-    id, name, year, author, summary, publisher, pageCount, readPage, finished, reading, insertedAt, updatedAt,
+    id,
+    name,
+    year,
+    author,
+    summary,
+    publisher,
+    pageCount,
+    readPage,
+    reading,
+    insertedAt,
+    updatedAt,
   };
 
-  books.push(newBook);
+  db.push(newBook).write();
 
-  const isSuccess = books.filter((book) => book.id === id).length > 0;
+  const isSuccess = db.find({ id }).value();
 
   if (isSuccess) {
     const response = h.response({
@@ -32,36 +48,40 @@ const addBookHandler = (request, h) => {
   }
 
   const response = h.response({
-    status: 'fail',
+    status: 'error',
     message: 'Buku gagal ditambahkan',
   });
   response.code(500);
   return response;
 };
 
-const getAllBooksHandler = () => ({
-  status: 'success',
-  data: {
-    books: books.map((book) => ({
-      id: book.id,
-      name: book.name,
-      publisher: book.publisher,
-    })),
-  },
-});
+const getAllBooksHandler = (request, h) => {
+  const books = db.value();
+
+  const response = h.response({
+    status: 'success',
+    data: {
+      books,
+    },
+  });
+  response.code(200);
+  return response;
+};
 
 const getBookByIdHandler = (request, h) => {
   const { bookId } = request.params;
 
-  const book = books.find((b) => b.id === bookId);
+  const book = db.find({ id: bookId }).value();
 
   if (book) {
-    return {
+    const response = h.response({
       status: 'success',
       data: {
         book,
       },
-    };
+    });
+    response.code(200);
+    return response;
   }
 
   const response = h.response({
@@ -74,19 +94,33 @@ const getBookByIdHandler = (request, h) => {
 
 const editBookByIdHandler = (request, h) => {
   const { bookId } = request.params;
-
   const {
-    name, year, author, summary, publisher, pageCount, readPage, reading,
+    name,
+    year,
+    author,
+    summary,
+    publisher,
+    pageCount,
+    readPage,
+    reading,
   } = request.payload;
 
   const updatedAt = new Date().toISOString();
-  const index = books.findIndex((book) => book.id === bookId);
 
-  if (index !== -1) {
-    books[index] = {
-      ...books[index],
-      name, year, author, summary, publisher, pageCount, readPage, reading, updatedAt,
-    };
+  const book = db.find({ id: bookId }).value();
+
+  if (book) {
+    db.find({ id: bookId }).assign({
+      name,
+      year,
+      author,
+      summary,
+      publisher,
+      pageCount,
+      readPage,
+      reading,
+      updatedAt,
+    }).write();
 
     const response = h.response({
       status: 'success',
@@ -107,10 +141,10 @@ const editBookByIdHandler = (request, h) => {
 const deleteBookByIdHandler = (request, h) => {
   const { bookId } = request.params;
 
-  const index = books.findIndex((book) => book.id === bookId);
+  const book = db.find({ id: bookId }).value();
 
-  if (index !== -1) {
-    books.splice(index, 1);
+  if (book) {
+    db.remove({ id: bookId }).write();
 
     const response = h.response({
       status: 'success',
