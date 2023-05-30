@@ -2,9 +2,9 @@
   "name": "bookshelf-api",
   "version": "1.0.0",
   "description": "Bookshelf API using Hapi",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
-    "server": "node server.js"
+    "server": "node src/server.js"
   },
   "keywords": [],
   "author": "",
